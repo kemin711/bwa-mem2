@@ -28,10 +28,12 @@ Authors: Vasimuddin Md <vasimuddin.md@intel.com>; Sanchit Misra <sanchit.misra@i
          Heng Li <hli@jimmy.harvard.edu>
 *****************************************************************************************/
 
+//#define __STDC_WANT_LIB_EXT1__ 1
 #include <iostream>
 #include <stdio.h>
 #include <stdlib.h>
-#include <string.h>
+//#include <string.h>
+#include <cstring>
 #if NUMA_ENABLED
 #include <numa.h>
 #endif
@@ -559,7 +561,7 @@ static void update_a(mem_opt_t *opt, const mem_opt_t *opt0)
 
 static void usage(const mem_opt_t *opt)
 {
-    fprintf(stderr, "Usage: bwa-mem2 mem [options] <idxbase> <in1.fq> [in2.fq]\n");
+    fprintf(stderr, "Usage: bwamem2 mem [options] <idxbase> <in1.fq> [in2.fq]\n");
     fprintf(stderr, "Options:\n");
     fprintf(stderr, "  Algorithm options:\n");
     fprintf(stderr, "    -o STR        Output SAM file name\n");
@@ -854,16 +856,22 @@ int main_mem(int argc, char *argv[])
     tim = __rdtsc();
     fprintf(stderr, "* Reading reference genome..\n");
     
-    char binary_seq_file[PATH_MAX];
-    strcpy_s(binary_seq_file, PATH_MAX, argv[optind]);
-    strcat_s(binary_seq_file, PATH_MAX, ".0123");
+    //char binary_seq_file[PATH_MAX];
+    //strcpy_s(binary_seq_file, PATH_MAX, argv[optind]);
+    //strcat_s(binary_seq_file, PATH_MAX, ".0123");
     //sprintf(binary_seq_file, "%s.0123", argv[optind]);
+    std::string binary_seq_file(argv[optind]);
+    binary_seq_file += "0.0123";
+
     
-    fprintf(stderr, "* Binary seq file = %s\n", binary_seq_file);
-    FILE *fr = fopen(binary_seq_file, "r");
+    //fprintf(stderr, "* Binary seq file = %s\n", binary_seq_file);
+    std::cerr << "* Binary seq file = " << binary_seq_file << std::endl;
+    FILE *fr = fopen(binary_seq_file.c_str(), "r");
     
     if (fr == NULL) {
-        fprintf(stderr, "Error: can't open %s input file\n", binary_seq_file);
+        //fprintf(stderr, "Error: can't open %s input file\n", binary_seq_file);
+       std::cerr << __FILE__ << ":" << __LINE__ << ":Error: can't open binary sequence input: "
+           << binary_seq_file << std::endl;
         exit(EXIT_FAILURE);
     }
     

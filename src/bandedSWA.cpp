@@ -470,7 +470,7 @@ void BandedPairWiseSW::smithWatermanBatchWrapper8(SeqPair *pairArray,
 	st2 = ___rdtsc();
 #endif
 	
-#if SORT_PAIRS     // disbaled in bwa-mem2 (only used in separate benchmark bsw code)
+#if SORT_PAIRS     // disbaled in bwamem2 (only used in separate benchmark bsw code)
 
     // Sort the sequences according to decreasing order of lengths
     SeqPair *tempArray = (SeqPair *)_mm_malloc(SORT_BLOCK_SIZE * numThreads *
@@ -672,7 +672,7 @@ void BandedPairWiseSW::smithWatermanBatchWrapper8(SeqPair *pairArray,
 	st4 = ___rdtsc();
 #endif
 	
-#if SORT_PAIRS      // disbaled in bwa-mem2 (only used in separate benchmark bsw code)
+#if SORT_PAIRS      // disbaled in bwamem2 (only used in separate benchmark bsw code)
 	{
     // Sort the sequences according to increasing order of id
 #pragma omp parallel num_threads(numThreads)
@@ -1168,7 +1168,7 @@ void BandedPairWiseSW::smithWatermanBatchWrapper16(SeqPair *pairArray,
 	st2 = ___rdtsc();
 #endif
 	
-#if SORT_PAIRS      // disbaled in bwa-mem2 (only used in separate benchmark bsw code)
+#if SORT_PAIRS      // disbaled in bwamem2 (only used in separate benchmark bsw code)
     // Sort the sequences according to decreasing order of lengths
     SeqPair *tempArray = (SeqPair *)_mm_malloc(SORT_BLOCK_SIZE * numThreads *
 											   sizeof(SeqPair), 64);
@@ -1367,7 +1367,7 @@ void BandedPairWiseSW::smithWatermanBatchWrapper16(SeqPair *pairArray,
 	st4 = ___rdtsc();
 #endif
 	
-#if SORT_PAIRS      // disbaled in bwa-mem2 (only used in separate benchmark bsw code)
+#if SORT_PAIRS      // disbaled in bwamem2 (only used in separate benchmark bsw code)
 	{
     // Sort the sequences according to increasing order of id
 #pragma omp parallel num_threads(numThreads)
@@ -2011,7 +2011,7 @@ void BandedPairWiseSW::smithWatermanBatchWrapper8(SeqPair *pairArray,
 	st2 = ___rdtsc();
 #endif
 	
-#if SORT_PAIRS       // disbaled in bwa-mem2 (only used in separate benchmark bsw code)
+#if SORT_PAIRS       // disbaled in bwamem2 (only used in separate benchmark bsw code)
     // Sort the sequences according to decreasing order of lengths
     SeqPair *tempArray = (SeqPair *)_mm_malloc(SORT_BLOCK_SIZE * numThreads *
 											   sizeof(SeqPair), 64);
@@ -2907,7 +2907,7 @@ void BandedPairWiseSW::smithWatermanBatchWrapper16(SeqPair *pairArray,
 	st4 = ___rdtsc();
 #endif
 	
-#if SORT_PAIRS       // disbaled in bwa-mem2 (only used in separate benchmark bsw code)
+#if SORT_PAIRS       // disbaled in bwamem2 (only used in separate benchmark bsw code)
 	{
     // Sort the sequences according to increasing order of id
 #pragma omp parallel num_threads(numThreads)
@@ -3499,7 +3499,7 @@ void BandedPairWiseSW::smithWatermanBatchWrapper16(SeqPair *pairArray,
 	st2 = ___rdtsc();
 #endif
 	
-#if SORT_PAIRS       // disbaled in bwa-mem2 (only used in separate benchmark bsw code)
+#if SORT_PAIRS       // disbaled in bwamem2 (only used in separate benchmark bsw code)
     // Sort the sequences according to decreasing order of lengths
     SeqPair *tempArray = (SeqPair *)_mm_malloc(SORT_BLOCK_SIZE * numThreads *
 											   sizeof(SeqPair), 64);
@@ -3697,7 +3697,7 @@ void BandedPairWiseSW::smithWatermanBatchWrapper16(SeqPair *pairArray,
     st4 = ___rdtsc();
 #endif
 	
-#if SORT_PAIRS       // disbaled in bwa-mem2 (only used in separate benchmark bsw code)
+#if SORT_PAIRS       // disbaled in bwamem2 (only used in separate benchmark bsw code)
 	{
     // Sort the sequences according to increasing order of id
 #pragma omp parallel num_threads(numThreads)
@@ -4227,7 +4227,7 @@ void BandedPairWiseSW::smithWatermanBatchWrapper8(SeqPair *pairArray,
 	st2 = ___rdtsc();
 #endif
 	
-#if SORT_PAIRS       // disbaled in bwa-mem2 (only used in separate benchmark bsw code)
+#if SORT_PAIRS       // disbaled in bwamem2 (only used in separate benchmark bsw code)
     // Sort the sequences according to decreasing order of lengths
     SeqPair *tempArray = (SeqPair *)_mm_malloc(SORT_BLOCK_SIZE * numThreads *
 											   sizeof(SeqPair), 64);
@@ -4419,7 +4419,7 @@ void BandedPairWiseSW::smithWatermanBatchWrapper8(SeqPair *pairArray,
      st4 = ___rdtsc();
 #endif
 	 
-#if SORT_PAIRS       // disbaled in bwa-mem2 (only used in separate benchmark bsw code)
+#if SORT_PAIRS       // disbaled in bwamem2 (only used in separate benchmark bsw code)
 	{
     // Sort the sequences according to increasing order of id
 #pragma omp parallel num_threads(numThreads)
