@@ -1,3 +1,8 @@
+## update by Kemin
+
+Remove ext dependency. Now you make safeclib and safestringlib
+independently.  This will look for it.
+
 ## Important Information
 
 ***Index structure has changed since commit 6743183. Rebuild the Index if you are using a later commit.***
