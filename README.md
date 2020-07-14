@@ -57,6 +57,13 @@ machine using the following command line:
 make CXX=icpc multi
 ```
 
+### target directory
+
+To install to a particular directory do
+<pre>
+make install prefix=/usr/local
+</pre>
+
 [bwa]: https://github.com/lh3/bwa
 [rel]: https://github.com/bwa-mem2/bwa-mem2/releases
 

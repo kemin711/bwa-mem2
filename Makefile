@@ -28,6 +28,7 @@
 ##                                Heng Li <hli@jimmy.harvard.edu> 
 ##*****************************************************************************************/
 #prefix=/usr/local
+# to install to a particular prefix do make install prefix=/usr/local
 EXE=bwamem2
 #CXX=		icpc
 ifeq ($(CXX), icpc)
@@ -38,7 +39,7 @@ endif
 ARCH_FLAGS=	-msse4.1
 MEM_FLAGS=	-DSAIS=1
 CPPFLAGS=	-DENABLE_PREFETCH -DV17=1 $(MEM_FLAGS) 
-INCLUDES=   -Isrc -Iext/safestringlib/include
+INCLUDES=   -Isrc -I$(prefix)/include/safestringlib
 LIBS=		-lpthread -lm -lz -L. -lbwa -lsafec -lsafestring
 OBJS=		src/fastmap.o src/bwtindex.o src/utils.o src/kthread.o \
 			src/kstring.o src/ksw.o src/bntseq.o src/bwamem.o src/profiling.o src/bandedSWA.o \
@@ -113,6 +114,7 @@ $(BWA_LIB):$(OBJS)
 #	cd ext/safestringlib/ && make clean && make CC=$(CC) directories libsafestring.a
 
 install:
+	mkdir -p $(prefix)/bin
 	install $(EXE) $(prefix)/bin
 
 clean:

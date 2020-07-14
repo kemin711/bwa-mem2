@@ -861,7 +861,7 @@ int main_mem(int argc, char *argv[])
     //strcat_s(binary_seq_file, PATH_MAX, ".0123");
     //sprintf(binary_seq_file, "%s.0123", argv[optind]);
     std::string binary_seq_file(argv[optind]);
-    binary_seq_file += "0.0123";
+    binary_seq_file += ".0123";
 
     
     //fprintf(stderr, "* Binary seq file = %s\n", binary_seq_file);
