@@ -101,7 +101,7 @@ void bns_dump(const bntseq_t *bns, const char *prefix)
 	{ // dump .amb
 		//strcpy_s(str, PATH_MAX, prefix); 
       //strcat_s(str, PATH_MAX, ".amb");
-      str += ".amb";
+      str = string(prefix) + ".amb";
 		fp = xopen(str.c_str(), "w");
 		err_fprintf(fp, "%lld %d %u\n", (long long)bns->l_pac, bns->n_seqs, bns->n_holes);
 		for (i = 0; i != bns->n_holes; ++i) {
@@ -205,7 +205,7 @@ bntseq_t *bns_restore(const char *prefix)
 	//strcpy_s(ann_filename, PATH_MAX, prefix); strcat_s(ann_filename, PATH_MAX, ".ann");
 	ann_filename += ".ann";
 	//strcpy_s(amb_filename, PATH_MAX, prefix); strcat_s(amb_filename, PATH_MAX, ".amb");
-   amb_filename += "amb";
+   amb_filename += ".amb";
 	//strcpy_s(pac_filename, PATH_MAX, prefix); strcat_s(pac_filename, PATH_MAX, ".pac");
 	pac_filename += ".pac";
 	bns = bns_restore_core(ann_filename.c_str(), amb_filename.c_str(), pac_filename.c_str());

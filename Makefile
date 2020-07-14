@@ -72,7 +72,8 @@ else ifneq ($(arch),)
 	ARCH_FLAGS=$(arch)
 endif
 
-CXXFLAGS=-g -O3 -fpermissive $(ARCH_FLAGS) -I${prefix}/include/libsafec -I${prefix}/include/safestringlib -Wall ##-xSSE2
+SYSTEM_INCLUDE=-I/usr/local/include/libsafec -I/usr/local/include/safestringlib
+CXXFLAGS=-g -O3 -fpermissive $(ARCH_FLAGS) -I${prefix}/include/libsafec -I${prefix}/include/safestringlib -Wall $(SYSTEM_INCLUDE) ##-xSSE2
 LDFLAGS += -L${prefix}/lib
 
 .PHONY: all clean depend multi install
@@ -111,8 +112,8 @@ $(BWA_LIB):$(OBJS)
 #$(SAFE_STR_LIB):
 #	cd ext/safestringlib/ && make clean && make CC=$(CC) directories libsafestring.a
 
-insall:
-	insall bwamem2 $(prefix)/bin
+install:
+	install $(EXE) $(prefix)/bin
 
 clean:
 	rm -fr src/*.o $(BWA_LIB) $(EXE) bwamem2.sse41 bwamem2.avx2 bwamem2.avx512bw
