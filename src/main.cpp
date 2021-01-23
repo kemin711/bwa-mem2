@@ -103,7 +103,11 @@ int main(int argc, char* argv[])
     {
         puts(PACKAGE_VERSION);
         return 0;
-    } else {
+    } 
+    else if (!strcmp(argv[1], "help")) {
+       usage(); return 0;
+    }
+    else {
         fprintf(stderr, "ERROR: unknown command '%s'\n", argv[1]);
         return 1;
     }
