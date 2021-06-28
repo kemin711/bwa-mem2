@@ -92,8 +92,13 @@ else
 myall:multi
 endif
 
-SYSTEM_INCLUDE=-I$(prefix)/include/libsafec -I$(prefix)/include/safestringlib
-CXXFLAGS=-g -O3 -fpermissive $(ARCH_FLAGS) -I${prefix}/include/libsafec -I${prefix}/include/safestringlib -Wall $(SYSTEM_INCLUDE) ##-xSSE2
+#SYSTEM_INCLUDE=-I$(prefix)/include/libsafec -I$(prefix)/include/safestringlib
+SYSTEM_INCLUDE=-isystem /usr/local/include/libsafec -isystem/usr/local/include/safestringlib
+#CXXFLAGS=-g -O3 -fpermissive $(ARCH_FLAGS) -I${prefix}/include/libsafec -I${prefix}/include/safestringlib -Wall $(SYSTEM_INCLUDE) ##-xSSE2
+CXXFLAGS=-g -O3 -fpermissive $(ARCH_FLAGS) -Wall $(SYSTEM_INCLUDE) ##-xSSE2
+ifneq ("$(wildcard ${prefix}/include/libsafec/safe_lib.h)","")
+		  CXXFLAGS += -I${prefix}/include/libsafec -I${prefix}/include/safestringlib
+endif
 LDFLAGS += -L${prefix}/lib
 
 .PHONY: all clean depend multi install
