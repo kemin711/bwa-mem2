@@ -30,17 +30,22 @@
 #prefix=/usr/local
 # to install to a particular prefix do make install prefix=/usr/local
 EXE=bwamem2
+
 #CXX=		icpc
 ifeq ($(CXX), icpc)
 	CC= icc
 else ifeq ($(CXX), g++)
 	CC=gcc
 endif		
-ARCH_FLAGS=	-msse4.1
+ARCH_FLAGS=	-msse -msse2 -msse3 -mssse3 -msse4.1
 MEM_FLAGS=	-DSAIS=1
-CPPFLAGS=	-DENABLE_PREFETCH -DV17=1 $(MEM_FLAGS) 
-INCLUDES=   -Isrc -I$(prefix)/include/safestringlib
+CPPFLAGS+=	-DENABLE_PREFETCH -DV17=1 $(MEM_FLAGS) 
+#INCLUDES=   -Isrc -Iext/safestringlib/include
+#INCLUDES=   -Isrc -I$(prefix)/include/safestringlib
+INCLUDES=   -Isrc 
+#LIBS=		-lpthread -lm -lz -L. -lbwa -Lext/safestringlib -lsafestring $(STATIC_GCC)
 LIBS=		-lpthread -lm -lz -L. -lbwa -lsafec -lsafestring
+#OBJS=		src/fastmap.o src/bwtindex.o src/utils.o src/memcpy_bwamem.o src/kthread.o \
 OBJS=		src/fastmap.o src/bwtindex.o src/utils.o src/kthread.o \
 			src/kstring.o src/ksw.o src/bntseq.o src/bwamem.o src/profiling.o src/bandedSWA.o \
 			src/FMI_search.o src/read_index_ele.o src/bwamem_pair.o src/kswv.o src/bwa.o \
@@ -48,12 +53,24 @@ OBJS=		src/fastmap.o src/bwtindex.o src/utils.o src/kthread.o \
 BWA_LIB=    libbwa.a
 #SAFE_STR_LIB=    ext/safestringlib/libsafestring.a
 
-ifneq ($(portable),)
-	LIBS+=-static-libgcc -static-libstdc++
-endif
-
-ifeq ($(arch),sse)
+ifeq ($(arch),sse41)
+	ifeq ($(CXX), icpc)
 		ARCH_FLAGS=-msse4.1
+	else
+		ARCH_FLAGS=-msse -msse2 -msse3 -mssse3 -msse4.1
+	endif
+else ifeq ($(arch),sse42)
+	ifeq ($(CXX), icpc)	
+		ARCH_FLAGS=-msse4.2
+	else
+		ARCH_FLAGS=-msse -msse2 -msse3 -mssse3 -msse4.1 -msse4.2
+	endif
+else ifeq ($(arch),avx)
+	ifeq ($(CXX), icpc)
+		ARCH_FLAGS=-mavx ##-xAVX
+	else	
+		ARCH_FLAGS=-mavx
+	endif
 else ifeq ($(arch),avx2)
 	ifeq ($(CXX), icpc)
 		ARCH_FLAGS=-march=core-avx2 #-xCORE-AVX2
@@ -71,9 +88,11 @@ else ifeq ($(arch),native)
 else ifneq ($(arch),)
 # To provide a different architecture flag like -march=core-avx2.
 	ARCH_FLAGS=$(arch)
+else
+myall:multi
 endif
 
-SYSTEM_INCLUDE=-I/usr/local/include/libsafec -I/usr/local/include/safestringlib
+SYSTEM_INCLUDE=-I$(prefix)/include/libsafec -I$(prefix)/include/safestringlib
 CXXFLAGS=-g -O3 -fpermissive $(ARCH_FLAGS) -I${prefix}/include/libsafec -I${prefix}/include/safestringlib -Wall $(SYSTEM_INCLUDE) ##-xSSE2
 LDFLAGS += -L${prefix}/lib
 
@@ -165,3 +184,4 @@ src/profiling.o: src/macro.h
 src/read_index_ele.o: src/read_index_ele.h src/utils.h src/bntseq.h
 src/read_index_ele.o: src/macro.h
 src/utils.o: src/utils.h src/ksort.h src/kseq.h
+src/memcpy_bwamem.o: src/memcpy_bwamem.h

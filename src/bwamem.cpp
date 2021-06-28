@@ -30,13 +30,7 @@ Authors: Vasimuddin Md <vasimuddin.md@intel.com>; Sanchit Misra <sanchit.misra@i
 
 #include "bwamem.h"
 #include "FMI_search.h"
-#ifdef __cplusplus
-extern "C" {
-#endif
-#include "safe_mem_lib.h"
-#ifdef __cplusplus
-}
-#endif
+#include "memcpy_bwamem.h"
 
 //----------------
 extern uint64_t tprof[LIM_R][LIM_C];
@@ -164,6 +158,17 @@ KSORT_INIT(mem_ars_hash, mem_alnreg_t, alnreg_hlt)
 #define alnreg_hlt2(a, b) ((a).is_alt < (b).is_alt || ((a).is_alt == (b).is_alt && ((a).score > (b).score || ((a).score == (b).score && (a).hash < (b).hash))))
 KSORT_INIT(mem_ars_hash2, mem_alnreg_t, alnreg_hlt2)
 
+#if MATE_SORT
+void sort_alnreg_re(int n, mem_alnreg_t* a) {
+    ks_introsort(mem_ars2, n, a);
+}
+
+void sort_alnreg_score(int n, mem_alnreg_t* a) {
+    ks_introsort(mem_ars, n, a);
+}
+
+#endif
+
 #define PATCH_MAX_R_BW 0.05f
 #define PATCH_MIN_SC_RATIO 0.90f
 
@@ -229,6 +234,60 @@ int mem_patch_reg(const mem_opt_t *opt, const bntseq_t *bns, const uint8_t *pac,
 #define MEM_MINSC_COEF 5.5f
 #define MEM_SEEDSW_COEF 0.05f
 int stat;
+
+#if MATE_SORT
+int mem_dedup_patch(const mem_opt_t *opt, const bntseq_t *bns,
+                    const uint8_t *pac, uint8_t *query, int n,
+                    mem_alnreg_t *a)
+{
+    int m, i, j;
+    if (n <= 1) return n;
+    for (i = 0; i < n; ++i) a[i].n_comp = 1;
+
+    for (i = 1; i < n; ++i)
+    {
+        mem_alnreg_t *p = &a[i];
+        if (p->rid != a[i-1].rid || p->rb >= a[i-1].re + opt->max_chain_gap)
+            continue; // then no need to go into the loop below
+
+        for (j = i - 1; j >= 0 && p->rid == a[j].rid && p->rb < a[j].re + opt->max_chain_gap; --j) {
+            mem_alnreg_t *q = &a[j];
+            int64_t or_, oq, mr, mq;
+            int score, w;
+            if (q->qe == q->qb) continue; // a[j] has been excluded
+            or_ = q->re - p->rb; // overlap length on the reference
+            oq = q->qb < p->qb? q->qe - p->qb : p->qe - q->qb; // overlap length on the query
+            mr = q->re - q->rb < p->re - p->rb? q->re - q->rb : p->re - p->rb; // min ref len in alignment
+            mq = q->qe - q->qb < p->qe - p->qb? q->qe - q->qb : p->qe - p->qb; // min qry len in alignment
+            if (or_ > opt->mask_level_redun * mr && oq > opt->mask_level_redun * mq) { // one of the hits is redundant
+                if (p->score < q->score)
+                {
+                    p->qe = p->qb;
+                    break;
+                }
+                else q->qe = q->qb;
+            }
+            else if (q->rb < p->rb && (score = mem_patch_reg(opt, bns, pac, query, q, p, &w)) > 0) { // then merge q into p
+                p->n_comp += q->n_comp + 1;
+                p->seedcov = p->seedcov > q->seedcov? p->seedcov : q->seedcov;
+                p->sub = p->sub > q->sub? p->sub : q->sub;
+                p->csub = p->csub > q->csub? p->csub : q->csub;
+                p->qb = q->qb, p->rb = q->rb;
+                p->truesc = p->score = score;
+                p->w = w;
+                q->qb = q->qe;
+            }
+        }
+    }
+    for (i = 0, m = 0; i < n; ++i) // exclude identical hits
+        if (a[i].qe > a[i].qb) {
+            if (m != i) a[m++] = a[i];
+            else ++m;
+        }
+    n = m;
+    return m;
+}
+#endif
 
 int mem_sort_dedup_patch(const mem_opt_t *opt, const bntseq_t *bns,
                          const uint8_t *pac, uint8_t *query, int n,
@@ -323,7 +382,7 @@ static int test_and_merge(const mem_opt_t *opt, int64_t l_pac, mem_chain_t *c,
             c->m <<= 1;
             if (pm == SEEDS_PER_CHAIN) {  // re-new memory
                 if ((auxSeedBuf = (mem_seed_t *) calloc(c->m, sizeof(mem_seed_t))) == NULL) { fprintf(stderr, "ERROR: out of memory auxSeedBuf\n"); exit(1); }
-                memcpy_s((char*) (auxSeedBuf), c->m * sizeof(mem_seed_t), c->seeds, c->n * sizeof(mem_seed_t));
+                memcpy_bwamem((char*) (auxSeedBuf), c->m * sizeof(mem_seed_t), c->seeds, c->n * sizeof(mem_seed_t), __FILE__, __LINE__);
                 c->seeds = auxSeedBuf;
                 tprof[PE13][tid]++;
             } else {  // new memory
@@ -688,7 +747,8 @@ void mem_chain_seeds(FMI_search *fmi, const mem_opt_t *opt,
     
     int num[nseq];
     memset(num, 0, nseq*sizeof(int));
-    int64_t *sa_coord = (int64_t *) _mm_malloc(sizeof(int64_t) * opt->max_occ, 64);
+    int smem_buf_size = 6000;
+    int64_t *sa_coord = (int64_t *) _mm_malloc(sizeof(int64_t) * opt->max_occ * smem_buf_size, 64);
     int64_t seedBufCount = 0;
     
     for (int l=0; l<nseq; l++)
@@ -726,6 +786,24 @@ void mem_chain_seeds(FMI_search *fmi, const mem_opt_t *opt,
         } while (pos < num_smem - 1 && matchArray[pos].rid == matchArray[pos + 1].rid);
         l_rep += e - b;
 
+        // bwt_sa
+        // assert(pos - smem_ptr + 1 < 6000);
+        if (pos - smem_ptr + 1 >= smem_buf_size)
+        {
+            int csize = smem_buf_size;
+            smem_buf_size *= 2;
+            sa_coord = (int64_t *) _mm_realloc(sa_coord, csize, opt->max_occ * smem_buf_size,
+                                               sizeof(int64_t));
+            assert(sa_coord != NULL);
+        }
+        int64_t id = 0, cnt_ = 0, mypos = 0;
+        #if SA_COMPRESSION
+        uint64_t tim = __rdtsc();
+        fmi->get_sa_entries_prefetch(&matchArray[smem_ptr], sa_coord, &cnt_,
+                                     pos - smem_ptr + 1, opt->max_occ, tid, id);  // sa compressed prefetch
+        tprof[MEM_SA][tid] += __rdtsc() - tim;
+        #endif
+        
         for (i = smem_ptr; i <= pos; i++)
         {
             SMEM *p = &matchArray[i];
@@ -734,19 +812,26 @@ void mem_chain_seeds(FMI_search *fmi, const mem_opt_t *opt,
             int64_t k;
             step = p->s > opt->max_occ? p->s / opt->max_occ : 1;
 
-            // uint64_t tim = __rdtsc();
-            int cnt = 0;            
+            int cnt = 0;
+            #if !SA_COMPRESSION
+            uint64_t tim = __rdtsc();
             fmi->get_sa_entries(p, sa_coord, &cnt, 1, opt->max_occ);
-            cnt = 0;
-            // tprof[MEM_SA][tid] += __rdtsc() - tim;
+            tprof[MEM_SA][tid] += __rdtsc() - tim;
+            #endif
             
+            cnt = 0;            
             for (k = count = 0; k < p->s && count < opt->max_occ; k += step, ++count)
             {
                 mem_chain_t tmp, *lower, *upper;
                 mem_seed_t s;
                 int rid, to_add = 0;
-                                
+
+                #if SA_COMPRESSION
+                s.rbeg = tmp.pos = sa_coord[mypos++];
+                #else
                 s.rbeg = tmp.pos = sa_coord[cnt++];
+                #endif
+                
                 s.qbeg = p->m;
                 s.score= s.len = slen;
                 if (s.rbeg < 0 || s.len < 0) 
@@ -1202,7 +1287,7 @@ void mem_process_seqs(mem_opt_t *opt,
     // PAIRED_END
     if (opt->flag & MEM_F_PE) { // infer insert sizes if not provided
         if (pes0)
-            memcpy_s(pes, 4 * sizeof(mem_pestat_t), pes0, 4 * sizeof(mem_pestat_t)); // if pes0 != NULL, set the insert-size
+            memcpy_bwamem(pes, 4 * sizeof(mem_pestat_t), pes0, 4 * sizeof(mem_pestat_t), __FILE__, __LINE__); // if pes0 != NULL, set the insert-size
                                                          // distribution as pes0
         else {
             fprintf(stderr, "[0000] Inferring insert size distribution of PE reads from data, "
@@ -1674,7 +1759,7 @@ void* _mm_realloc(void *ptr, int64_t csize, int64_t nsize, int16_t dsize) {
     }
     void *nptr = _mm_malloc(nsize * dsize, 64);
     assert(nptr != NULL);
-    memcpy_s(nptr, nsize * dsize, ptr, csize);
+    memcpy_bwamem(nptr, nsize * dsize, ptr, csize, __FILE__, __LINE__);
     _mm_free(ptr);
     
     return nptr;
