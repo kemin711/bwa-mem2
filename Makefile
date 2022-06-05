@@ -27,31 +27,32 @@
 ##Contacts: Vasimuddin Md <vasimuddin.md@intel.com>; Sanchit Misra <sanchit.misra@intel.com>;
 ##                                Heng Li <hli@jimmy.harvard.edu> 
 ##*****************************************************************************************/
-#prefix=/usr/local
-# to install to a particular prefix do make install prefix=/usr/local
-EXE=bwamem2
 
+ifneq ($(portable),)
+	STATIC_GCC=-static-libgcc -static-libstdc++
+endif
+execname=bwamem2
+EXE=		bwamem2
 #CXX=		icpc
 ifeq ($(CXX), icpc)
 	CC= icc
 else ifeq ($(CXX), g++)
 	CC=gcc
 endif		
+safestring_include=/usr/local/include/safestring
+safestring_lib=/usr/local/lib
 ARCH_FLAGS=	-msse -msse2 -msse3 -mssse3 -msse4.1
 MEM_FLAGS=	-DSAIS=1
-CPPFLAGS+=	-DENABLE_PREFETCH -DV17=1 $(MEM_FLAGS) 
-#INCLUDES=   -Isrc -Iext/safestringlib/include
-#INCLUDES=   -Isrc -I$(prefix)/include/safestringlib
-INCLUDES=   -Isrc 
-#LIBS=		-lpthread -lm -lz -L. -lbwa -Lext/safestringlib -lsafestring $(STATIC_GCC)
-LIBS=		-lpthread -lm -lz -L. -lbwa -lsafec -lsafestring
-#OBJS=		src/fastmap.o src/bwtindex.o src/utils.o src/memcpy_bwamem.o src/kthread.o \
-OBJS=		src/fastmap.o src/bwtindex.o src/utils.o src/kthread.o \
+CPPFLAGS+=	-DENABLE_PREFETCH -DV17=1 -DMATE_SORT=0 $(MEM_FLAGS) 
+INCLUDES=   -Isrc -I$(safestring_include)
+LIBS=		-lpthread -lm -lz -L. -lbwa -L$(safestring_lib) -lsafestring $(STATIC_GCC)
+OBJS=		src/fastmap.o src/bwtindex.o src/utils.o src/memcpy_bwamem.o src/kthread.o \
 			src/kstring.o src/ksw.o src/bntseq.o src/bwamem.o src/profiling.o src/bandedSWA.o \
 			src/FMI_search.o src/read_index_ele.o src/bwamem_pair.o src/kswv.o src/bwa.o \
 			src/bwamem_extra.o src/kopen.o
 BWA_LIB=    libbwa.a
 #SAFE_STR_LIB=    ext/safestringlib/libsafestring.a
+SAFE_STR_LIB=    /usr/local/lib/libsafestring.a
 
 ifeq ($(arch),sse41)
 	ifeq ($(CXX), icpc)
@@ -92,62 +93,59 @@ else
 myall:multi
 endif
 
-#SYSTEM_INCLUDE=-I$(prefix)/include/libsafec -I$(prefix)/include/safestringlib
-SYSTEM_INCLUDE=-isystem /usr/local/include/libsafec -isystem/usr/local/include/safestringlib
-#CXXFLAGS=-g -O3 -fpermissive $(ARCH_FLAGS) -I${prefix}/include/libsafec -I${prefix}/include/safestringlib -Wall $(SYSTEM_INCLUDE) ##-xSSE2
-CXXFLAGS=-g -O3 -fpermissive $(ARCH_FLAGS) -Wall $(SYSTEM_INCLUDE) ##-xSSE2
-ifneq ("$(wildcard ${prefix}/include/libsafec/safe_lib.h)","")
-		  CXXFLAGS += -I${prefix}/include/libsafec -I${prefix}/include/safestringlib
-endif
-LDFLAGS += -L${prefix}/lib
+CXXFLAGS+=	-g -O3 -fpermissive $(ARCH_FLAGS) #-Wall ##-xSSE2
 
-.PHONY: all clean depend multi install
+.PHONY:all clean depend multi myall
 .SUFFIXES:.cpp .o
 
 .cpp.o:
 	$(CXX) -c $(CXXFLAGS) $(CPPFLAGS) $(INCLUDES) $< -o $@
 
-all: $(EXE)
+all:$(EXE)
 
 #multi:
 #	rm -f src/*.o $(BWA_LIB); cd ext/safestringlib/ && $(MAKE) clean;
-#	$(MAKE) arch=sse    EXE=bwamem2.sse41    CXX=$(CXX) all
+#	$(MAKE) arch=sse41    EXE=$(execname).sse41    CXX=$(CXX) all
 #	rm -f src/*.o $(BWA_LIB); cd ext/safestringlib/ && $(MAKE) clean;
-#	$(MAKE) arch=avx2   EXE=bwamem2.avx2     CXX=$(CXX) all
+#	$(MAKE) arch=sse42    EXE=$(execname).sse42    CXX=$(CXX) all
 #	rm -f src/*.o $(BWA_LIB); cd ext/safestringlib/ && $(MAKE) clean;
-#	$(MAKE) arch=avx512 EXE=bwamem2.avx512bw CXX=$(CXX) all
-#	$(CXX) $(CXXFLAGS) src/runsimd.cpp -lsafestring -o bwamem2
-
+#	$(MAKE) arch=avx    EXE=$(execname).avx    CXX=$(CXX) all
+#	rm -f src/*.o $(BWA_LIB); cd ext/safestringlib/ && $(MAKE) clean;
+#	$(MAKE) arch=avx2   EXE=$(execname).avx2     CXX=$(CXX) all
+#	rm -f src/*.o $(BWA_LIB); cd ext/safestringlib/ && $(MAKE) clean;
+#	$(MAKE) arch=avx512 EXE=$(execname).avx512bw CXX=$(CXX) all
+#	$(CXX) -Wall -O3 src/runsimd.cpp -Iext/safestringlib/include -Lext/safestringlib/ -lsafestring $(STATIC_GCC) -o $(EXE)
+#
 multi:
-	rm -f src/*.o $(BWA_LIB)
-	$(MAKE) arch=sse    EXE=bwamem2.sse41    CXX=$(CXX) all
-	rm -f src/*.o $(BWA_LIB)
-	$(MAKE) arch=avx2   EXE=bwamem2.avx2     CXX=$(CXX) all
-	rm -f src/*.o $(BWA_LIB)
-	$(MAKE) arch=avx512 EXE=bwamem2.avx512bw CXX=$(CXX) all
-	$(CXX) $(CXXFLAGS) src/runsimd.cpp -lsafestring -o bwamem2
+	rm -f src/*.o $(BWA_LIB); $(MAKE) clean;
+	$(MAKE) arch=sse41    EXE=$(execname).sse41    CXX=$(CXX) all
+	rm -f src/*.o $(BWA_LIB); $(MAKE) clean;
+	$(MAKE) arch=sse42    EXE=$(execname).sse42    CXX=$(CXX) all
+	rm -f src/*.o $(BWA_LIB); $(MAKE) clean;
+	$(MAKE) arch=avx    EXE=$(execname).avx    CXX=$(CXX) all
+	rm -f src/*.o $(BWA_LIB); $(MAKE) clean;
+	$(MAKE) arch=avx2   EXE=$(execname).avx2     CXX=$(CXX) all
+	rm -f src/*.o $(BWA_LIB); $(MAKE) clean;
+	$(MAKE) arch=avx512 EXE=$(execname).avx512bw CXX=$(CXX) all
+	$(CXX) -Wall -O3 src/runsimd.cpp -I$(safestring_include) -L$(safestring_lib) -lsafestring $(STATIC_GCC) -o $(EXE)
+
 
 #$(EXE):$(BWA_LIB) $(SAFE_STR_LIB) src/main.o
-$(EXE): $(BWA_LIB) src/main.o
-	$(CXX) $(CXXFLAGS) $(LDFLAGS) src/main.o $(BWA_LIB) $(LIBS) -o $@
+#	$(CXX) $(CXXFLAGS) $(LDFLAGS) src/main.o $(BWA_LIB) $(LIBS) -o $@
 
 $(BWA_LIB):$(OBJS)
 	ar rcs $(BWA_LIB) $(OBJS)
 
 #$(SAFE_STR_LIB):
-#	cd ext/safestringlib/ && make clean && make CC=$(CC) directories libsafestring.a
-
-install:
-	mkdir -p $(prefix)/bin
-	install $(EXE) $(prefix)/bin
+#	cd ext/safestringlib/ && $(MAKE) clean && $(MAKE) CC=$(CC) directories libsafestring.a
 
 clean:
-	rm -fr src/*.o $(BWA_LIB) $(EXE) bwamem2.sse41 bwamem2.avx2 bwamem2.avx512bw
+	rm -fr src/*.o $(BWA_LIB) $(EXE) $(execname).*
 
 #	cd ext/safestringlib/ && $(MAKE) clean
 
 depend:
-	(LC_ALL=C; export LC_ALL; makedepend -Y -- $(CXXFLAGS) $(CPPFLAGS) -I. -- src/*.cpp -L/usr/local/lib)
+	(LC_ALL=C; export LC_ALL; makedepend -Y -- $(CXXFLAGS) $(CPPFLAGS) -I. -- src/*.cpp)
 
 # DO NOT DELETE
 
