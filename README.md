@@ -1,3 +1,8 @@
+## update by Kemin
+
+Remove ext dependency. Now you make safeclib and safestringlib
+independently.  This will look for it.
+=======
 [![GitHub Downloads](https://img.shields.io/github/downloads/bwa-mem2/bwa-mem2/total?label=GitHub%20Downloads)](https://github.com/bwa-mem2/bwa-mem2/releases)
 [![BioConda Install](https://img.shields.io/conda/dn/bioconda/bwa-mem2?label=BioConda%20Installs)](https://anaconda.org/bioconda/bwa-mem2)
 
@@ -56,6 +61,13 @@ machine using the following command line:
 ```sh
 make CXX=icpc multi
 ```
+
+### target directory
+
+To install to a particular directory do
+<pre>
+make install prefix=/usr/local
+</pre>
 
 [bwa]: https://github.com/lh3/bwa
 [rel]: https://github.com/bwa-mem2/bwa-mem2/releases

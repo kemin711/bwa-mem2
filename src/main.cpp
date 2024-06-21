@@ -32,7 +32,7 @@ Contacts: Vasimuddin Md <vasimuddin.md@intel.com>; Sanchit Misra <sanchit.misra@
 #include "main.h"
 
 #ifndef PACKAGE_VERSION
-#define PACKAGE_VERSION "2.2.1"
+#define PACKAGE_VERSION "2.0"
 #endif
 
 
@@ -42,10 +42,10 @@ uint64_t proc_freq, tprof[LIM_R][LIM_C], prof[LIM_R];
 
 int usage()
 {
-    fprintf(stderr, "Usage: bwa-mem2 <command> <arguments>\n");
+    fprintf(stderr, "Usage: bwamem2 <command> <arguments>\n");
     fprintf(stderr, "Commands:\n");
     fprintf(stderr, "  index         create index\n");
-    fprintf(stderr, "  mem           alignment\n");
+    fprintf(stderr, "  mem           do alignment\n");
     fprintf(stderr, "  version       print version number\n");
     return 1;
 }
@@ -77,23 +77,19 @@ int main(int argc, char* argv[])
         fprintf(stderr, "-----------------------------\n");
 #if __AVX512BW__
         fprintf(stderr, "Executing in AVX512 mode!!\n");
-#elif __AVX2__
+#endif
+#if ((!__AVX512BW__) & (__AVX2__))
         fprintf(stderr, "Executing in AVX2 mode!!\n");
-#elif __AVX__
-        fprintf(stderr, "Executing in AVX mode!!\n");        
-#elif __SSE4_2__
-        fprintf(stderr, "Executing in SSE4.2 mode!!\n");
-#elif __SSE4_1__
-        fprintf(stderr, "Executing in SSE4.1 mode!!\n");        
+#endif
+#if ((!__AVX512BW__) && (!__AVX2__) && (__SSE2__))
+        fprintf(stderr, "Executing in SSE4.1 mode!!\n");
+#endif
+#if ((!__AVX512BW__) && (!__AVX2__) && (!__SSE2__))
+        fprintf(stderr, "Executing in Scalar mode!!\n");
 #endif
         fprintf(stderr, "-----------------------------\n");
 
-        #if SA_COMPRESSION
-        fprintf(stderr, "* SA compression enabled with xfactor: %d\n", 0x1 << SA_COMPX);
-        #endif
-        
-        ksprintf(&pg, "@PG\tID:bwa-mem2\tPN:bwa-mem2\tVN:%s\tCL:%s", PACKAGE_VERSION, argv[0]);
-
+        ksprintf(&pg, "@PG\tID:bwa\tPN:bwa\tVN:%s\tCL:%s", PACKAGE_VERSION, argv[0]);
         for (int i = 1; i < argc; ++i) ksprintf(&pg, " %s", argv[i]);
         ksprintf(&pg, "\n");
         bwa_pg = pg.s;
@@ -107,7 +103,11 @@ int main(int argc, char* argv[])
     {
         puts(PACKAGE_VERSION);
         return 0;
-    } else {
+    } 
+    else if (!strcmp(argv[1], "help")) {
+       usage(); return 0;
+    }
+    else {
         fprintf(stderr, "ERROR: unknown command '%s'\n", argv[1]);
         return 1;
     }

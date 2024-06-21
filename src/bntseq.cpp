@@ -30,7 +30,8 @@
 
 #include <stdio.h>
 #include <stdlib.h>
-#include <string.h>
+//#include <string.h>
+#include <cstring>
 #include <zlib.h>
 #include <unistd.h>
 #include <errno.h>
@@ -38,6 +39,8 @@
 #include "bntseq.h"
 #include "utils.h"
 #include "macro.h"
+#include <string>
+#include <iostream>
 
 #include "kseq.h"
 KSEQ_DECLARE(gzFile)
@@ -48,6 +51,8 @@ KHASH_MAP_INIT_STR(str, int)
 #ifdef USE_MALLOC_WRAPPERS
 #  include "malloc_wrap.h"
 #endif
+
+using namespace std;
 
 extern uint64_t tprof[LIM_R][LIM_C];
 
@@ -72,13 +77,16 @@ unsigned char nst_nt4_table[256] = {
 
 void bns_dump(const bntseq_t *bns, const char *prefix)
 {
-	char str[PATH_MAX];
+	//char str[PATH_MAX];
+   string str(prefix);
 	FILE *fp;
 	int i;
     //assert(strlen(prefix) + 4 < 1024);
 	{ // dump .ann
-		strcpy_s(str, PATH_MAX, prefix); strcat_s(str, PATH_MAX, ".ann");
-		fp = xopen(str, "w");
+		//strcpy_s(str, PATH_MAX, prefix); 
+      //strcat_s(str, PATH_MAX, ".ann");
+      str += ".ann";
+		fp = xopen(str.c_str(), "w");
 		err_fprintf(fp, "%lld %d %u\n", (long long)bns->l_pac, bns->n_seqs, bns->seed);
 		for (i = 0; i != bns->n_seqs; ++i) {
 			bntann1_t *p = bns->anns + i;
@@ -91,8 +99,10 @@ void bns_dump(const bntseq_t *bns, const char *prefix)
 		err_fclose(fp);
 	}
 	{ // dump .amb
-		strcpy_s(str, PATH_MAX, prefix); strcat_s(str, PATH_MAX, ".amb");
-		fp = xopen(str, "w");
+		//strcpy_s(str, PATH_MAX, prefix); 
+      //strcat_s(str, PATH_MAX, ".amb");
+      str = string(prefix) + ".amb";
+		fp = xopen(str.c_str(), "w");
 		err_fprintf(fp, "%lld %d %u\n", (long long)bns->l_pac, bns->n_seqs, bns->n_holes);
 		for (i = 0; i != bns->n_holes; ++i) {
 			bntamb1_t *p = bns->ambs + i;
@@ -187,17 +197,22 @@ bntseq_t *bns_restore_core(const char *ann_filename, const char* amb_filename, c
 
 bntseq_t *bns_restore(const char *prefix)
 {  
-	char ann_filename[PATH_MAX], amb_filename[PATH_MAX], pac_filename[PATH_MAX], alt_filename[PATH_MAX];
+	//char ann_filename[PATH_MAX], amb_filename[PATH_MAX], pac_filename[PATH_MAX], alt_filename[PATH_MAX];
+   string ann_filename(prefix), amb_filename(prefix), pac_filename(prefix), alt_filename(prefix);
 	FILE *fp;
 	bntseq_t *bns;
 	//assert(strlen(prefix) + 4 < 1024);
-	strcpy_s(ann_filename, PATH_MAX, prefix); strcat_s(ann_filename, PATH_MAX, ".ann");
-	strcpy_s(amb_filename, PATH_MAX, prefix); strcat_s(amb_filename, PATH_MAX, ".amb");
-	strcpy_s(pac_filename, PATH_MAX, prefix); strcat_s(pac_filename, PATH_MAX, ".pac");
-	bns = bns_restore_core(ann_filename, amb_filename, pac_filename);
+	//strcpy_s(ann_filename, PATH_MAX, prefix); strcat_s(ann_filename, PATH_MAX, ".ann");
+	ann_filename += ".ann";
+	//strcpy_s(amb_filename, PATH_MAX, prefix); strcat_s(amb_filename, PATH_MAX, ".amb");
+   amb_filename += ".amb";
+	//strcpy_s(pac_filename, PATH_MAX, prefix); strcat_s(pac_filename, PATH_MAX, ".pac");
+	pac_filename += ".pac";
+	bns = bns_restore_core(ann_filename.c_str(), amb_filename.c_str(), pac_filename.c_str());
 	if (bns == 0) return 0;
-    strcpy_s(alt_filename, PATH_MAX, prefix); strcat_s(alt_filename, PATH_MAX, ".alt");
-	if ((fp = fopen(alt_filename, "r")) != 0) { // read .alt file if present
+    //strcpy_s(alt_filename, PATH_MAX, prefix); strcat_s(alt_filename, PATH_MAX, ".alt");
+   alt_filename += ".alt";
+	if ((fp = fopen(alt_filename.c_str(), "r")) != 0) { // read .alt file if present
 		char str[1024];
 		khash_t(str) *h;
 		int c, i, absent;
@@ -299,7 +314,7 @@ int64_t bns_fasta2bntseq(gzFile fp_fa, const char *prefix, int for_only)
 {
 	extern void seq_reverse(int len, ubyte_t *seq, int is_comp); // in bwaseqio.c
 	kseq_t *seq;
-	char name[PATH_MAX];
+	//char name[PATH_MAX];
 	bntseq_t *bns;
 	uint8_t *pac = 0;
 	int32_t m_seqs, m_holes;
@@ -322,8 +337,10 @@ int64_t bns_fasta2bntseq(gzFile fp_fa, const char *prefix, int for_only)
 	if (pac == NULL) { perror("Allocation of pac failed"); exit(EXIT_FAILURE); }
 	q = bns->ambs;
 	//assert(strlen(prefix) + 4 < 1024);
-	strcpy_s(name, PATH_MAX, prefix); strcat_s(name, PATH_MAX, ".pac");
-	fp = xopen(name, "wb");
+	//strcpy_s(name, PATH_MAX, prefix); strcat_s(name, PATH_MAX, ".pac");
+	string name(prefix);
+   name += ".pac";
+	fp = xopen(name.c_str(), "wb");
 	// read sequences
 	while (kseq_read(seq) >= 0) pac = add1(seq, bns, pac, &m_pac, &m_seqs, &m_holes, &q);
 	if (!for_only) { // add the reverse complemented sequence

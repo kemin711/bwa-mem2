@@ -31,25 +31,28 @@
 ifneq ($(portable),)
 	STATIC_GCC=-static-libgcc -static-libstdc++
 endif
-
-EXE=		bwa-mem2
+execname=bwamem2
+EXE=		bwamem2
 #CXX=		icpc
 ifeq ($(CXX), icpc)
 	CC= icc
 else ifeq ($(CXX), g++)
 	CC=gcc
 endif		
+safestring_include=/usr/local/include/safestring
+safestring_lib=/usr/local/lib
 ARCH_FLAGS=	-msse -msse2 -msse3 -mssse3 -msse4.1
 MEM_FLAGS=	-DSAIS=1
 CPPFLAGS+=	-DENABLE_PREFETCH -DV17=1 -DMATE_SORT=0 $(MEM_FLAGS) 
-INCLUDES=   -Isrc -Iext/safestringlib/include
-LIBS=		-lpthread -lm -lz -L. -lbwa -Lext/safestringlib -lsafestring $(STATIC_GCC)
+INCLUDES=   -Isrc -I$(safestring_include)
+LIBS=		-lpthread -lm -lz -L. -lbwa -L$(safestring_lib) -lsafestring $(STATIC_GCC)
 OBJS=		src/fastmap.o src/bwtindex.o src/utils.o src/memcpy_bwamem.o src/kthread.o \
 			src/kstring.o src/ksw.o src/bntseq.o src/bwamem.o src/profiling.o src/bandedSWA.o \
 			src/FMI_search.o src/read_index_ele.o src/bwamem_pair.o src/kswv.o src/bwa.o \
 			src/bwamem_extra.o src/kopen.o
 BWA_LIB=    libbwa.a
-SAFE_STR_LIB=    ext/safestringlib/libsafestring.a
+#SAFE_STR_LIB=    ext/safestringlib/libsafestring.a
+SAFE_STR_LIB=    /usr/local/lib/libsafestring.a
 
 ifeq ($(arch),sse41)
 	ifeq ($(CXX), icpc)
@@ -92,7 +95,7 @@ endif
 
 CXXFLAGS+=	-g -O3 -fpermissive $(ARCH_FLAGS) #-Wall ##-xSSE2
 
-.PHONY:all clean depend multi
+.PHONY:all clean depend multi myall
 .SUFFIXES:.cpp .o
 
 .cpp.o:
@@ -100,32 +103,46 @@ CXXFLAGS+=	-g -O3 -fpermissive $(ARCH_FLAGS) #-Wall ##-xSSE2
 
 all:$(EXE)
 
+#multi:
+#	rm -f src/*.o $(BWA_LIB); cd ext/safestringlib/ && $(MAKE) clean;
+#	$(MAKE) arch=sse41    EXE=$(execname).sse41    CXX=$(CXX) all
+#	rm -f src/*.o $(BWA_LIB); cd ext/safestringlib/ && $(MAKE) clean;
+#	$(MAKE) arch=sse42    EXE=$(execname).sse42    CXX=$(CXX) all
+#	rm -f src/*.o $(BWA_LIB); cd ext/safestringlib/ && $(MAKE) clean;
+#	$(MAKE) arch=avx    EXE=$(execname).avx    CXX=$(CXX) all
+#	rm -f src/*.o $(BWA_LIB); cd ext/safestringlib/ && $(MAKE) clean;
+#	$(MAKE) arch=avx2   EXE=$(execname).avx2     CXX=$(CXX) all
+#	rm -f src/*.o $(BWA_LIB); cd ext/safestringlib/ && $(MAKE) clean;
+#	$(MAKE) arch=avx512 EXE=$(execname).avx512bw CXX=$(CXX) all
+#	$(CXX) -Wall -O3 src/runsimd.cpp -Iext/safestringlib/include -Lext/safestringlib/ -lsafestring $(STATIC_GCC) -o $(EXE)
+#
 multi:
-	rm -f src/*.o $(BWA_LIB); cd ext/safestringlib/ && $(MAKE) clean;
-	$(MAKE) arch=sse41    EXE=bwa-mem2.sse41    CXX=$(CXX) all
-	rm -f src/*.o $(BWA_LIB); cd ext/safestringlib/ && $(MAKE) clean;
-	$(MAKE) arch=sse42    EXE=bwa-mem2.sse42    CXX=$(CXX) all
-	rm -f src/*.o $(BWA_LIB); cd ext/safestringlib/ && $(MAKE) clean;
-	$(MAKE) arch=avx    EXE=bwa-mem2.avx    CXX=$(CXX) all
-	rm -f src/*.o $(BWA_LIB); cd ext/safestringlib/ && $(MAKE) clean;
-	$(MAKE) arch=avx2   EXE=bwa-mem2.avx2     CXX=$(CXX) all
-	rm -f src/*.o $(BWA_LIB); cd ext/safestringlib/ && $(MAKE) clean;
-	$(MAKE) arch=avx512 EXE=bwa-mem2.avx512bw CXX=$(CXX) all
-	$(CXX) -Wall -O3 src/runsimd.cpp -Iext/safestringlib/include -Lext/safestringlib/ -lsafestring $(STATIC_GCC) -o bwa-mem2
+	rm -f src/*.o $(BWA_LIB); $(MAKE) clean;
+	$(MAKE) arch=sse41    EXE=$(execname).sse41    CXX=$(CXX) all
+	rm -f src/*.o $(BWA_LIB); $(MAKE) clean;
+	$(MAKE) arch=sse42    EXE=$(execname).sse42    CXX=$(CXX) all
+	rm -f src/*.o $(BWA_LIB); $(MAKE) clean;
+	$(MAKE) arch=avx    EXE=$(execname).avx    CXX=$(CXX) all
+	rm -f src/*.o $(BWA_LIB); $(MAKE) clean;
+	$(MAKE) arch=avx2   EXE=$(execname).avx2     CXX=$(CXX) all
+	rm -f src/*.o $(BWA_LIB); $(MAKE) clean;
+	$(MAKE) arch=avx512 EXE=$(execname).avx512bw CXX=$(CXX) all
+	$(CXX) -Wall -O3 src/runsimd.cpp -I$(safestring_include) -L$(safestring_lib) -lsafestring $(STATIC_GCC) -o $(EXE)
 
 
-$(EXE):$(BWA_LIB) $(SAFE_STR_LIB) src/main.o
-	$(CXX) $(CXXFLAGS) $(LDFLAGS) src/main.o $(BWA_LIB) $(LIBS) -o $@
+#$(EXE):$(BWA_LIB) $(SAFE_STR_LIB) src/main.o
+#	$(CXX) $(CXXFLAGS) $(LDFLAGS) src/main.o $(BWA_LIB) $(LIBS) -o $@
 
 $(BWA_LIB):$(OBJS)
 	ar rcs $(BWA_LIB) $(OBJS)
 
-$(SAFE_STR_LIB):
-	cd ext/safestringlib/ && $(MAKE) clean && $(MAKE) CC=$(CC) directories libsafestring.a
+#$(SAFE_STR_LIB):
+#	cd ext/safestringlib/ && $(MAKE) clean && $(MAKE) CC=$(CC) directories libsafestring.a
 
 clean:
-	rm -fr src/*.o $(BWA_LIB) $(EXE) bwa-mem2.sse41 bwa-mem2.sse42 bwa-mem2.avx bwa-mem2.avx2 bwa-mem2.avx512bw
-	cd ext/safestringlib/ && $(MAKE) clean
+	rm -fr src/*.o $(BWA_LIB) $(EXE) $(execname).*
+
+#	cd ext/safestringlib/ && $(MAKE) clean
 
 depend:
 	(LC_ALL=C; export LC_ALL; makedepend -Y -- $(CXXFLAGS) $(CPPFLAGS) -I. -- src/*.cpp)
